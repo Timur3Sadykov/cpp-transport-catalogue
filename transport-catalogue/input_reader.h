@@ -1,5 +1,6 @@
 #pragma once
 #include "transport_catalogue.h"
+#include "geo.h"
 
 #include <iostream>
 #include <string>
@@ -23,7 +24,7 @@ namespace transport {
         public:
             explicit Reader(Catalogue& catalogue);
 
-            void ReadUpdateQueries(std::istream &input);
+            void ReadQueries(std::istream &input);
 
             void UpdateCatalogue();
 
@@ -48,9 +49,9 @@ namespace transport {
 
             QueryType GetQueryType(const std::string query_line) const;
 
-            void AddStopUpdateQuery(std::string &&line);
+            void AddStopQuery(std::string &&line);
 
-            void AddBusUpdateQuery(std::string &&line);
+            void AddBusQuery(std::string &&line);
         };
     }
 }

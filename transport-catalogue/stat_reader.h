@@ -9,14 +9,14 @@
 
 namespace transport {
     namespace stat {
-        std::ostream &operator<<(std::ostream &out, const BusInfo &bus_info);
+        std::ostream& operator<<(std::ostream& out, const BusInfo& bus_info);
 
-        std::ostream &operator<<(std::ostream &out, const StopInfo &stop_info);
+        std::ostream& operator<<(std::ostream& out, const StopInfo& stop_info);
 
-        BusInfo GetBusInfo(Catalogue& catalogue, std::string_view query_view);
+        BusInfo GetBusInfo(const Catalogue& catalogue, std::string_view query_view);
 
-        StopInfo GetStopInfo(Catalogue& catalogue, std::string_view query_view);
+        StopInfo GetStopInfo(const Catalogue& catalogue, std::string_view query_view);
 
-        void ReadQueriesToGetStat(std::istream &input, std::ostream &out, Catalogue& catalogue);
+        void ReadQueriesToGetStat(std::istream& input, std::ostream& out, Catalogue& catalogue);
     }
 }

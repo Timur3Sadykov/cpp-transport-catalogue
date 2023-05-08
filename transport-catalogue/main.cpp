@@ -8,7 +8,7 @@ int main() {
 
     transport::Catalogue transport_catalogue;
     transport::input::Reader reader(transport_catalogue);
-    reader.ReadUpdateQueries(std::cin);
+    reader.ReadQueries(std::cin);
     reader.UpdateCatalogue();
 
     transport::stat::ReadQueriesToGetStat(std::cin, std::cout, transport_catalogue);

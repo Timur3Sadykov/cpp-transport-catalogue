@@ -16,26 +16,26 @@ int transport::detail::ReadLineWithNumber(std::istream& input) {
 transport::input::Reader::Reader(Catalogue& catalogue)
             : catalogue_(catalogue) {}
 
-void transport::input::Reader::ReadUpdateQueries(std::istream& input) {
+void transport::input::Reader::ReadQueries(std::istream& input) {
     int n = detail::ReadLineWithNumber(input);
     for (int i = 0; i < n; ++i) {
         std::string query_line = detail::ReadLine(input);
         if (GetQueryType(query_line) == QueryType::STOP) {
-            AddStopUpdateQuery(std::move(query_line));
+            AddStopQuery(std::move(query_line));
         }
         else {
-            AddBusUpdateQuery(std::move(query_line));
+            AddBusQuery(std::move(query_line));
         }
     }
 }
 
 void transport::input::Reader::UpdateCatalogue() {
     for (const StopUpdateQuery& query : stop_update_queries_) {
-        catalogue_.AddStop(query.name, query.latitude, query.longitude);
+        catalogue_.AddStop(query.name, Coordinates{query.latitude, query.longitude});
     }
     for (const StopUpdateQuery& query : stop_update_queries_) {
-        for (const auto& [stop_name, distance] : query.stops_distance) {
-            catalogue_.AddStopsDistance(query.name, stop_name, distance);
+        for (const auto& [stop_name_to, distance] : query.stops_distance) {
+            catalogue_.SetStopsDistance(query.name, stop_name_to, distance);
         }
     }
 
@@ -53,7 +53,7 @@ transport::input::QueryType transport::input::Reader::GetQueryType(const std::st
     }
 }
 
-void transport::input::Reader::AddStopUpdateQuery(std::string&& line) {
+void transport::input::Reader::AddStopQuery(std::string&& line) {
     stop_update_queries_.resize(stop_update_queries_.size() + 1);
     StopUpdateQuery& query = *(stop_update_queries_.end() - 1);
     query.line = std::move(line);
@@ -92,7 +92,7 @@ void transport::input::Reader::AddStopUpdateQuery(std::string&& line) {
     }
  }
 
- void transport::input::Reader::AddBusUpdateQuery(std::string&& line) {
+ void transport::input::Reader::AddBusQuery(std::string&& line) {
     bus_update_queries_.resize(bus_update_queries_.size() + 1);
     BusUpdateQuery& query = *(bus_update_queries_.end() - 1);
     query.line = std::move(line);

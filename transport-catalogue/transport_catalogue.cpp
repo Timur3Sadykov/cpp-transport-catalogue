@@ -1,15 +1,15 @@
 #include "transport_catalogue.h"
 #include "geo.h"
 
-void transport::Catalogue::AddStop(std::string_view name_view, double latitude, double longitude) {
-    stops_.push_back(Stop{std::string{name_view}, latitude, longitude});
+void transport::Catalogue::AddStop(std::string_view name_view, Coordinates&& coordinates) {
+    stops_.push_back(Stop{std::string{name_view}, std::move(coordinates)});
     Stop& ref = *(stops_.end() - 1);
     stopname_to_stop_[ref.name] = &ref;
     stop_to_buses_names[&ref];
 }
 
-void transport::Catalogue::AddStopsDistance(std::string_view stop_name_1, std::string_view stop_name_2, int distance) {
-    std::pair<const Stop*, const Stop*> stop_ptr_pair{stopname_to_stop_.at(stop_name_1), stopname_to_stop_.at(stop_name_2)};
+void transport::Catalogue::SetStopsDistance(std::string_view stop_name_from, std::string_view stop_name_to, int distance) {
+    std::pair<const Stop*, const Stop*> stop_ptr_pair{stopname_to_stop_.at(stop_name_from), stopname_to_stop_.at(stop_name_to)};
     stopptrpair_to_distance[stop_ptr_pair] = distance;
 }
 
@@ -41,7 +41,7 @@ void transport::Catalogue::AddBus(std::string_view name_view, const std::vector<
 
 transport::BusInfo transport::Catalogue::FindBus(std::string_view name_view) const {
     if (!busname_to_bus_.count(name_view)) {
-        throw std::string{"Bus "s + std::string{name_view} + ": not found"s};
+        return BusInfo{name_view, false};
     }
 
     const Bus* bus_ptr = busname_to_bus_.at(name_view);
@@ -54,8 +54,7 @@ transport::BusInfo transport::Catalogue::FindBus(std::string_view name_view) con
     int route_length = 0;
     double geo_length = 0.0;
     for (auto it = bus_ptr->bus_stops.begin(); it != bus_ptr->bus_stops.end() - 1; ++it) {
-        geo_length += ComputeDistance(Coordinates{(*it)->latitude, (*it)->longitude},
-                                      Coordinates{(*(it + 1))->latitude, (*(it + 1))->longitude});
+        geo_length += ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
         if (stopptrpair_to_distance.count(std::make_pair(*it, *(it + 1)))) {
             route_length += stopptrpair_to_distance.at(std::make_pair(*it, *(it + 1)));
         }
@@ -66,13 +65,13 @@ transport::BusInfo transport::Catalogue::FindBus(std::string_view name_view) con
 
     double curvature = route_length / geo_length;
 
-    return BusInfo{bus_ptr->name, bus_ptr->bus_stops.size(), unique_stops_set.size(), route_length, curvature};
+    return BusInfo{bus_ptr->name, true, bus_ptr->bus_stops.size(), unique_stops_set.size(), route_length, curvature};
 }
 
 transport::StopInfo transport::Catalogue::FindStop(std::string_view name_view) const {
     if (!stopname_to_stop_.count(name_view)) {
-        throw std::string{"Stop "s + std::string{name_view} + ": not found"s};
+        return StopInfo{name_view, false, {}};
     }
     const Stop* stop_ptr = stopname_to_stop_.at(name_view);
-    return StopInfo{stop_ptr->name, stop_to_buses_names.at(stop_ptr)};
+    return StopInfo{stop_ptr->name, true, stop_to_buses_names.at(stop_ptr)};
 }
