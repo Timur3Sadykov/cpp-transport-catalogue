@@ -31,7 +31,7 @@ void transport::input::Reader::ReadQueries(std::istream& input) {
 
 void transport::input::Reader::UpdateCatalogue() {
     for (const StopUpdateQuery& query : stop_update_queries_) {
-        catalogue_.AddStop(query.name, Coordinates{query.latitude, query.longitude});
+        catalogue_.AddStop(query.name, query.coordinates);
     }
     for (const StopUpdateQuery& query : stop_update_queries_) {
         for (const auto& [stop_name_to, distance] : query.stops_distance) {
@@ -64,15 +64,16 @@ void transport::input::Reader::AddStopQuery(std::string&& line) {
 
     auto start_lat = query.line.find_first_of("0123456789"s, stop_name);
     auto stop_lat = query.line.find(',', start_lat);
-    query.latitude = std::stod(query.line.substr(start_lat, stop_lat - start_lat));
+    double latitude = std::stod(query.line.substr(start_lat, stop_lat - start_lat));
 
     auto start_lng = query.line.find_first_of("0123456789"s, stop_lat);
     auto stop_lng = query.line.find(',', start_lng);
+    double longitude = 0.0;
     if (stop_lng == query.line.npos) {
-        query.longitude = std::stod(query.line.substr(start_lng));
+        longitude = std::stod(query.line.substr(start_lng));
     }
     else {
-        query.longitude = std::stod(query.line.substr(start_lng, stop_lng-start_lng));
+        longitude = std::stod(query.line.substr(start_lng, stop_lng-start_lng));
 
         std::string_view line_view{query.line};
         line_view.remove_prefix(line_view.find_first_not_of(' ', stop_lng + 1));
@@ -90,6 +91,7 @@ void transport::input::Reader::AddStopQuery(std::string&& line) {
             }
         }
     }
+    query.coordinates = Coordinates{latitude, longitude};
  }
 
  void transport::input::Reader::AddBusQuery(std::string&& line) {

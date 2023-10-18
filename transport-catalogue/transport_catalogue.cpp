@@ -1,8 +1,8 @@
 #include "transport_catalogue.h"
 #include "geo.h"
 
-void transport::Catalogue::AddStop(std::string_view name_view, Coordinates&& coordinates) {
-    stops_.push_back(Stop{std::string{name_view}, std::move(coordinates)});
+void transport::Catalogue::AddStop(std::string_view name_view, const Coordinates& coordinates) {
+    stops_.push_back(Stop{std::string{name_view}, coordinates});
     Stop& ref = *(stops_.end() - 1);
     stopname_to_stop_[ref.name] = &ref;
     stop_to_buses_names[&ref];

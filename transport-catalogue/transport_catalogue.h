@@ -29,7 +29,7 @@ namespace transport {
 
     class Catalogue {
     public:
-        void AddStop(std::string_view name_view, Coordinates&& coordinates);
+        void AddStop(std::string_view name_view, const Coordinates& coordinates);
 
         void SetStopsDistance(std::string_view stop_name_from, std::string_view stop_name_to, int distance);
 

@@ -32,7 +32,7 @@ namespace transport {
             struct StopUpdateQuery {
                 std::string line;
                 std::string name;
-                double latitude = 0, longitude = 0;
+                Coordinates coordinates;
                 std::deque<std::pair<std::string_view, int>> stops_distance;
             };
 
