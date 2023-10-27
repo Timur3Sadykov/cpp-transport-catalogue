@@ -1,16 +1,15 @@
 #include "transport_catalogue.h"
-#include "input_reader.h"
-#include "stat_reader.h"
-//#include "tests.h"
+#include "request_handler.h"
+#include "map_renderer.h"
+#include "json_reader.h"
 
-int main() {
-    //transport::tests::TestTransportCatalogue();
-
+int main()
+{
     transport::Catalogue transport_catalogue;
-    transport::input::Reader reader(transport_catalogue);
-    reader.ReadQueries(std::cin);
-    reader.UpdateCatalogue();
+    transport::MapRenderer renderer;
+    transport::RequestHandler handler(transport_catalogue, renderer);
+    transport::JsonReader reader(handler);
 
-    transport::stat::ReadQueriesToGetStat(std::cin, std::cout, transport_catalogue);
-
+    reader.SendJsonRequests(std::cin);
+    reader.OutputJsonResponse(std::cout);
 }
