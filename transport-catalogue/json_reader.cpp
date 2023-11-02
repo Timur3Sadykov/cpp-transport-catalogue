@@ -1,4 +1,6 @@
 #include "json_reader.h"
+#include "json.h"
+#include "json_builder.h"
 #include "map_renderer.h"
 #include "domain.h"
 #include <sstream>
@@ -176,50 +178,57 @@ namespace
 
     json::Node::Object SendStopStatRequest(const transport::RequestHandler& request_handler, const json::Node& request)
     {
-        json::Node::Object response;
+        auto object_builder = json::Builder{};
+        object_builder.StartObject();
         auto stop_info = request_handler.GetStopInfo(request.At(KEY_NAME).AsString());
 
         if (stop_info)
         {
-            json::Node::Array buses{};
+            auto array_builder = json::Builder{};
+            array_builder.StartArray();
 
             for (const auto& bus_name: stop_info->buses_names)
             {
-                buses.push_back(std::string{bus_name});
+                array_builder.Value(std::string{bus_name});
             }
 
-            response[KEY_BUSES] = std::move(buses);
-            response[KEY_REQUEST_ID] = request.At(KEY_ID);
+            array_builder.EndArray();
+
+            object_builder.Key(KEY_BUSES).Value(array_builder.Build().AsArray());
+            object_builder.Key(KEY_REQUEST_ID).Value(request.At(KEY_ID).AsInt());
         }
         else
         {
-            response[KEY_REQUEST_ID] = request.At(KEY_ID);
-            response[KEY_ERROR] = NOT_FOUND;
+            object_builder.Key(KEY_REQUEST_ID).Value(request.At(KEY_ID).AsInt());
+            object_builder.Key(KEY_ERROR).Value(NOT_FOUND);
         }
 
-        return response;
+        object_builder.EndObject();
+        return object_builder.Build().AsObject();
     }
 
     json::Node::Object SendBusStatRequest(const transport::RequestHandler& request_handler, const json::Node& request)
     {
-        json::Node::Object response;
+        auto object_builder = json::Builder{};
+        object_builder.StartObject();
         auto bus_info = request_handler.GetBusInfo(request.At(KEY_NAME).AsString());
 
         if (bus_info)
         {
-            response[KEY_CURVATURE] = bus_info->curvature;
-            response[KEY_REQUEST_ID] = request.At(KEY_ID);
-            response[KEY_R_LENGTH] = bus_info->route_length;
-            response[KEY_STOP_COUNT] = bus_info->stops_on_route;
-            response[KEY_U_STOP_COUNT] = bus_info->unique_stops;
+            object_builder.Key(KEY_CURVATURE).Value(bus_info->curvature);
+            object_builder.Key(KEY_REQUEST_ID).Value(request.At(KEY_ID).AsInt());
+            object_builder.Key(KEY_R_LENGTH).Value(bus_info->route_length);
+            object_builder.Key(KEY_STOP_COUNT).Value(bus_info->stops_on_route);
+            object_builder.Key(KEY_U_STOP_COUNT).Value(bus_info->unique_stops);
         }
         else
         {
-            response[KEY_REQUEST_ID] = request.At(KEY_ID);
-            response[KEY_ERROR] = NOT_FOUND;
+            object_builder.Key(KEY_REQUEST_ID).Value(request.At(KEY_ID).AsInt());
+            object_builder.Key(KEY_ERROR).Value(NOT_FOUND);
         }
 
-        return response;
+        object_builder.EndObject();
+        return object_builder.Build().AsObject();
     }
 
     json::Node::Object SendMapStatRequest(const transport::RequestHandler& request_handler, const json::Node& request)
@@ -227,16 +236,19 @@ namespace
         std::ostringstream out;
         request_handler.RenderMap().Render(out);
 
-        json::Node::Object response;
-        response[KEY_MAP_RESP] = out.str();
-        response[KEY_REQUEST_ID] = request.At(KEY_ID);
+        auto object_builder = json::Builder{};
+        object_builder.StartObject();
+        object_builder.Key(KEY_MAP_RESP).Value(out.str());
+        object_builder.Key(KEY_REQUEST_ID).Value(request.At(KEY_ID).AsInt());
+        object_builder.EndObject();
 
-        return response;
+        return object_builder.Build().AsObject();
     }
 
     json::Node::Array SendStatRequests(const transport::RequestHandler& request_handler, const json::Node& requests)
     {
-        json::Node::Array response{};
+        auto array_builder = json::Builder{};
+        array_builder.StartArray();
 
         try
         {
@@ -246,28 +258,31 @@ namespace
 
                 if (request_key == KEY_STOP)
                 {
-                    response.emplace_back(SendStopStatRequest(request_handler, request));
+                    array_builder.Value(SendStopStatRequest(request_handler, request));
                 }
                 else if (request_key == KEY_BUS)
                 {
-                    response.emplace_back(SendBusStatRequest(request_handler, request));
+                    array_builder.Value(SendBusStatRequest(request_handler, request));
                 }
                 else if (request_key == KEY_MAP_REQ)
                 {
-                    response.emplace_back(SendMapStatRequest(request_handler, request));
+                    array_builder.Value(SendMapStatRequest(request_handler, request));
                 }
             }
         }
         catch (const json::JsonException& e)
         {}
 
-        return response;
+        array_builder.EndArray();
+        return array_builder.Build().AsArray();
     }
 }
 
 JsonReader::JsonReader(RequestHandler& request_handler)
     : request_handler_(request_handler)
-    {}
+{
+    response_builder_.StartArray();
+}
 
 void JsonReader::SendJsonRequests(std::istream& input)
 {
@@ -285,12 +300,13 @@ void JsonReader::SendJsonRequests(std::istream& input)
 
     if (json_requests.Contains(KEY_STAT_R))
     {
-        auto result = SendStatRequests(request_handler_, json_requests.At(KEY_STAT_R));
-        response_.insert(response_.end(), make_move_iterator(result.begin()), make_move_iterator(result.end()));
+        response_builder_.Merge(SendStatRequests(request_handler_, json_requests.At(KEY_STAT_R)));
     }
 }
 
 void JsonReader::OutputJsonResponse(std::ostream& out)
 {
-    json::Print(json::Document(response_), out);
+    response_builder_.EndArray();
+    json::Print(json::Document(response_builder_.Build()), out);
+    response_builder_.Clear();
 }

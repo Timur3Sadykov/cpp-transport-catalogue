@@ -1,6 +1,6 @@
 #pragma once
 #include "request_handler.h"
-#include "json.h"
+#include "json_builder.h"
 #include <sstream>
 
 namespace transport
@@ -16,6 +16,6 @@ namespace transport
 
     private:
         RequestHandler& request_handler_;
-        json::Node::Array response_;
+        json::Builder response_builder_;
     };
 }

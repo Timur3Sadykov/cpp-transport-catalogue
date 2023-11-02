@@ -41,7 +41,9 @@ namespace json {
         Node(std::string value);
         Node(Object object);
         Node(Array array);
+        Node(Value value);
 
+        Value& GetValue() noexcept;
         const Value& GetValue() const noexcept;
 
         template <class ValueT>
